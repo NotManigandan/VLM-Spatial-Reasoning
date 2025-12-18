@@ -20,12 +20,12 @@
 ## Methods:
 - **ICL**
   - We test retrieval-based ICL to inject spatial reasoning at inference time (no parameter updates) and compare it to supervised fine-tuning on OmniSpatial.
-  - For each OmniSpatial query, we retrieve the top-*K* most similar QA examples from SpaceThinker using a FAISS index (L2 distance) over question embeddings from `all-MiniLM-L6-v2`, with *K* ∈ {3, 5}.
+  - For each OmniSpatial query, we retrieve the top-*k* most similar QA examples from SpaceThinker using a FAISS index (L2 distance) over question embeddings from `all-MiniLM-L6-v2`, with *k* &isin; {3, 5}.
   - Each example includes an image, question, reasoning trace, and final answer.
 - **Distillation**
   - We distill spatial reasoning from a larger VLM (Qwen2.5-VL-7B, teacher) into a smaller one (Qwen2.5-VL-3B, student).
   - We use:
-    - Vanilla logit-based distillation - (CE + KL with temperature):
+    - Vanilla logit-based distillation [3] - (CE + KL with temperature):
       ```math
       \mathcal{L}_{\text{VanillaKD}}
       = \alpha \,\mathrm{CE}(y, z^{S})
@@ -36,7 +36,7 @@
         \left(\frac{z^{S}}{T}\right)
       \right)
       ```
-    - Attention-based distillation - to transfer attention behavior despite different head counts (28 vs 16), using similarity weighted head matching and a simple linear mapping for layer mismatches:
+    - Attention-based distillation [4] - to transfer attention behavior despite different head counts (28 vs 16), using similarity weighted head matching and a simple linear mapping for layer mismatches:
       ```math
       \mathcal{L}_{\text{AttnKD}}
       = \sum_{i=1}^{H_T} \mathrm{KL}\!\left(
@@ -71,13 +71,17 @@
   - We also create a non-color subset by filtering out color-dependent questions (via regex).
  
 ## Experimental Results:
+- **Evaluation Metric**
+  - Exact match accuracy (through regex) of the predicted answer label (A–D).
+  - We chose exact match accuracy through regex because OmniSpatial is a multiple choice VQA benchmark where the model must output a single option label (A-D) after reasoning.
+
 - **Supervised Fine-Tuning (SFT)**
-  - We fine-tune on SpaceThinker using QLoRA (4-bit NF4, bf16).
+  - We fine-tune on SpaceThinker using QLoRA (4-bit NF4, bf16, rank of 128, &alpha; of 256).
   - 3B (SFT): 41.81%, 7B (SFT): 43.57%, 3B (base): 43.44%
   - SpaceThinker-based SFT does not consistently improve on OmniSpatial and its likely due to limited dataset diversity/complexity.
 
-- In-Context Learning (ICL) vs. SFT
-  - We use retrieval-based ICL (top-*k* similar SpaceThinker examples per query; *k* ∈ {3, 5}).
+- **In-Context Learning**
+  - We use retrieval-based ICL (top-*k* similar SpaceThinker examples per query; *k* &isin; {3, 5}).
   - Naive ICL: 30.59%
   - Best ICL (MCQ-formatted, k=3): 43.44% (surpasses our 3B SFT)
   - Trade-off: higher inference cost (latency nearly 2 times than SFT).
@@ -85,14 +89,14 @@
     <img src="images/Latency_Comparison.png" alt="Distillation Illustration">
   </p>
 
-- Distillation vs. SFT
+- **Distillation**
   - Both logit-KD and attention-KD outperform 3B SFT
   - Best: Attention-based KD: 42.98% (still slightly below 7B teacher due to knowledge gap due to difference in capacity/size)
   <p align="center">
     <img src="images/Performance_Graph (ICL, Distillation, SFT).png" alt="Distillation Illustration">
   </p>
 
-- Robustness to Grayscale
+- **Robustness to Grayscale**
   - Grayscale improves accuracy on both all-questions and non-color splits suggesting color can add noise when irrelevant.
   <p align="center">
     <img src="images/All_questions_color_no_color.png" alt="Distillation Illustration">
