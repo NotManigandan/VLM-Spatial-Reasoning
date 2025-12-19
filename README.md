@@ -105,6 +105,8 @@
     <img src="images/No_color_questions.png" alt="Distillation Illustration">
   </p>
 
+#### LoRA Adapters for the SFT and distilled models can be found at: https://drive.google.com/drive/folders/1uLb_d1Ithf8DZADVoW64-zb66cgsiPSa?usp=sharing
+
 ## Conclusion
 - Fine-tuning Qwen2.5-VL on SpaceThinker did not improve OmniSpatial accuracy (~43% → ~41%), suggesting SpaceThinker may not target the core spatial challenges.
 - ICL (MCQ style) was more effective. Retrieved examples outperformed the fine-tuned model, but increased inference latency.
